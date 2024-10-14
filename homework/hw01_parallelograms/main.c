@@ -1,21 +1,27 @@
+#include <float.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+
+#define EPSILON 1e-10;
 
 struct Point {
   double x;
   double y;
 };
 
-bool isNearZero(double n) {
-  return fabs(n) < 1e-12;
+bool isEqual(double n1, double n2) {
+  double diff = fabs(n1 - n2);
+  double max = fmax(fabs(n1), fabs(n2));
+
+  return diff <= max * EPSILON;
 }
 
 bool isOnTheSameLine(struct Point a, struct Point b, struct Point c) {
   double abSlope = (b.y - a.y) / (b.x - a.x);
   double bcSlope = (c.y - b.y) / (c.x - b.x);
 
-  return isNearZero(abSlope - bcSlope);
+  return isEqual(abSlope, bcSlope);
 }
 
 struct Point findFourth(struct Point a, struct Point b, struct Point c) {
@@ -27,23 +33,21 @@ struct Point findFourth(struct Point a, struct Point b, struct Point c) {
 const char *classifyParallelogram(
     struct Point a, struct Point b, struct Point c
 ) {
-  struct Point aVec = {b.x - a.x, b.y - a.y};
-  struct Point bVec = {c.x - b.x, c.y - b.y};
+  struct Point aVec = {a.x - b.x, a.y - b.y};
+  struct Point cVec = {c.x - b.x, c.y - b.y};
 
   double aSize = hypot(aVec.x, aVec.y);
-  double bSize = hypot(bVec.x, bVec.y);
+  double cSize = hypot(cVec.x, cVec.y);
 
-  double abAngleCos = (aVec.x * bVec.x + aVec.y * bVec.y) / (aSize * bSize);
+  bool isRightAngle = isEqual(aVec.x * cVec.x, -aVec.y * cVec.y);
+  bool isEqualSize = isEqual(aSize, cSize);
 
-  bool isRightAngle = isNearZero(abAngleCos);
-  bool isEqualSize = isNearZero(aSize - bSize);
-
-  if (isEqualSize && !isRightAngle) {
-    return "kosoctverec";
+  if (isEqualSize && isRightAngle) {
+    return "ctverec";
   }
 
   if (isEqualSize) {
-    return "ctverec";
+    return "kosoctverec";
   }
 
   if (isRightAngle) {
@@ -68,7 +72,7 @@ int readPoint(const char *title, struct Point *point) {
 }
 
 int main(void) {
-  struct Point a = {0.0, 0.0}, b = {0.0, 0.0}, c = {0.0, 0.0};
+  struct Point a = {0, 0}, b = {0, 0}, c = {0, 0};
 
   if (readPoint("Bod A:\n", &a) != 0 || readPoint("Bod B:\n", &b) != 0 ||
       readPoint("Bod C:\n", &c) != 0) {

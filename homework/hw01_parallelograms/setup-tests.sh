@@ -36,6 +36,9 @@ testFiles["0009_out.txt"]="Bod A:\nBod B:\nNespravny vstup.\n"
 testFiles["0010_in.txt"]="[2, 5]\n[3, 4]\n[7 9]\n"
 testFiles["0010_out.txt"]="Bod A:\nBod B:\nBod C:\nNespravny vstup.\n"
 
+testFiles["0011_in.txt"]="[9479.825e-60,77700.064e-60]\n[78276.275e-60,0.544e-60]\n[0.674e-60,0.544e-60]\n"
+testFiles["0011_out.txt"]="Bod A:\nBod B:\nBod C:\nA': [6.8797124e-56,-7.7698976e-56], rovnobeznik\nB': [-6.8795776e-56,7.7700064e-56], rovnobeznik\nC': [8.7755426e-56,7.7700064e-56], kosoctverec\n"
+
 for file in "${!testFiles[@]}"; do
   printf -- "${testFiles[$file]}" >"$TEST_DIR/$file"
 done
