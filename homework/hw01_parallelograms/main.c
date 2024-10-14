@@ -8,7 +8,7 @@ struct Point {
 };
 
 bool isNearZero(double n) {
-  return fabs(n) < 1e-10;
+  return fabs(n) < 1e-12;
 }
 
 bool isOnTheSameLine(struct Point a, struct Point b, struct Point c) {
@@ -19,12 +19,7 @@ bool isOnTheSameLine(struct Point a, struct Point b, struct Point c) {
 }
 
 struct Point findFourth(struct Point a, struct Point b, struct Point c) {
-  struct Point baVec = {a.x - b.x, a.y - b.y};
-  struct Point bcVec = {c.x - b.x, c.y - b.y};
-
-  struct Point bbPrimeVec = {baVec.x + bcVec.x, baVec.y + bcVec.y};
-
-  struct Point bPrime = {bbPrimeVec.x + b.x, bbPrimeVec.y + b.y};
+  struct Point bPrime = {a.x - b.x + c.x, a.y - b.y + c.y};
 
   return bPrime;
 }
