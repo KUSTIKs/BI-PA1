@@ -1,7 +1,5 @@
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 const int quotesCount = 9;
 const char *quotes[] = {
@@ -27,21 +25,21 @@ int main() {
 
   if (readElementsCount < 1) {
     printf("Neh mi'\n");
-    return EXIT_FAILURE;
+    return 0;
   }
 
   if (endChar != '\0') {
     printf("bIjatlh 'e' yImev\n");
-    return EXIT_FAILURE;
+    return 0;
   }
 
   bool isInRange = quoteIndex >= 0 && quoteIndex <= quotesCount - 1;
 
   if (!isInRange) {
     printf("Qih mi' %d\n", quoteIndex);
-    return EXIT_FAILURE;
+    return 0;
   }
 
   printf("Qapla'\n%s\n", quotes[quoteIndex]);
-  return EXIT_SUCCESS;
+  return 0;
 }
