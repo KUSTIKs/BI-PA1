@@ -1,4 +1,3 @@
-#include <float.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,11 +16,11 @@ bool isEqual(double n1, double n2) {
   return diff <= max * EPSILON;
 }
 
-bool isOnTheSameLine(struct Point a, struct Point b, struct Point c) {
-  double abSlope = (b.y - a.y) / (b.x - a.x);
-  double bcSlope = (c.y - b.y) / (c.x - b.x);
+bool areCollinear(struct Point a, struct Point b, struct Point c) {
+  double lhs = (b.y - a.y) * (c.x - b.x);
+  double rhs = (c.y - b.y) * (b.x - a.x);
 
-  return isEqual(abSlope, bcSlope);
+  return isEqual(lhs, rhs);
 }
 
 struct Point findFourth(struct Point a, struct Point b, struct Point c) {
@@ -81,7 +80,7 @@ int main(void) {
     return 0;
   }
 
-  if (isOnTheSameLine(a, b, c)) {
+  if (areCollinear(a, b, c)) {
     printf("Rovnobezniky nelze sestrojit.\n");
     return 0;
   }
