@@ -1,0 +1,35 @@
+[[test]]
+input  = "11:45:20,456\n12:07:54,349\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba:  0:22:33,893\n"
+
+[[test]]
+input  = "15:18:34,232\n15:18:34,293\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba:  0:00:00,061\n"
+
+[[test]]
+input  = "12:00:00,000\n12:00:00,000\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba:  0:00:00,000\n"
+
+[[test]]
+input  = "01:01:01,001\n07:07:07,007\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba:  6:06:06,006\n"
+
+[[test]]
+input  = " 1 : 1 : 1 , 001\n 7 : 7 : 7 , 007\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba:  6:06:06,006\n"
+
+[[test]]
+input  = "1:1:1,001\n17:7:7,007\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nDoba: 16:06:06,006\n"
+
+[[test]]
+input  = "12:30:00,000\n12:00:00,000\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nNespravny vstup.\n"
+
+[[test]]
+input  = "15:30:34,123\n15:60:34,123\n"
+output = "Zadejte cas t1:\nZadejte cas t2:\nNespravny vstup.\n"
+
+[[test]]
+input  = "15:40:21.745\n"
+output = "Zadejte cas t1:\nNespravny vstup.\n"
