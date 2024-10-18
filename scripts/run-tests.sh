@@ -3,6 +3,7 @@
 # Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Messages
@@ -91,6 +92,15 @@ for input_file in "${test_cases[@]}"; do
     ((pass_count++))
   else
     [[ "$silent_mode" == "false" ]] && echo -e "$(basename "$input_file" _in.txt): ${FAIL_MESSAGE}"
+
+    # Print the input, expected output, and actual output
+    echo -e "${BLUE}Input:${NC}"
+    cat -n "$input_file"
+    echo -e "${BLUE}Expected output:${NC}"
+    cat -n "$expected_output_file"
+    echo -e "${BLUE}Actual output:${NC}"
+    cat -n "$actual_output_file"
+
     ((fail_count++))
   fi
 done
