@@ -1,0 +1,15 @@
+[[test]]
+input  = "5\n3\n"
+output = "Zadejte pocet poli:\nZadejte velikost pole:\n+---------------+\n|   XXX   XXX   |\n|   XXX   XXX   |\n|   XXX   XXX   |\n|XXX   XXX   XXX|\n|XXX   XXX   XXX|\n|XXX   XXX   XXX|\n|   XXX   XXX   |\n|   XXX   XXX   |\n|   XXX   XXX   |\n|XXX   XXX   XXX|\n|XXX   XXX   XXX|\n|XXX   XXX   XXX|\n|   XXX   XXX   |\n|   XXX   XXX   |\n|   XXX   XXX   |\n+---------------+\n"
+
+[[test]]
+input  = "8\n4\n"
+output = "Zadejte pocet poli:\nZadejte velikost pole:\n+--------------------------------+\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|    XXXX    XXXX    XXXX    XXXX|\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n|XXXX    XXXX    XXXX    XXXX    |\n+--------------------------------+\n"
+
+[[test]]
+input  = "2\n0\n"
+output = "Zadejte pocet poli:\nZadejte velikost pole:\nNespravny vstup.\n"
+
+[[test]]
+input  = "asdf\n"
+output = "Zadejte pocet poli:\nNespravny vstup.\n"
