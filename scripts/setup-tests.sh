@@ -51,12 +51,12 @@ validate_config_file() {
 
 # Create input and output test files based on parsed values
 create_test_files() {
-  if [[ -z "$input" ]]; then
+  if [[ -z "${input+x}" ]]; then
     echo -e "${RED}Error: Missing input value for test index $test_index.${NC}"
     exit 1
   fi
 
-  if [[ -z "$output" ]]; then
+  if [[ -z "${input+x}" ]]; then
     echo -e "${RED}Error: Missing output value for test index $test_index.${NC}"
     exit 1
   fi
@@ -98,8 +98,8 @@ while IFS= read -r line; do
     fi
 
     # Reset input and output variables for the next test
-    input=""
-    output=""
+    unset input
+    unset output
   fi
 
   is_first_run="false"
