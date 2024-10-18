@@ -1,0 +1,23 @@
+[[test]]
+input  = "7.5 12\n6 15\n"
+output = "Obdelnik #1:\nObdelnik #2:\nObdelniky maji stejny obsah.\n"
+
+[[test]]
+input  = "22 18\n13 9\n"
+output = "Obdelnik #1:\nObdelnik #2:\nObdelnik #2 ma mensi obsah.\n"
+
+[[test]]
+input  = "133e4 4.25\n4e4 5.28e3\n"
+output = "Obdelnik #1:\nObdelnik #2:\nObdelnik #1 ma mensi obsah.\n"
+
+[[test]]
+input  = "0.2 0.1731\n0.15 0.2308\n"
+output = "Obdelnik #1:\nObdelnik #2:\nObdelniky maji stejny obsah.\n"
+
+[[test]]
+input  = "12 4\n-2 5\n"
+output = "Obdelnik #1:\nObdelnik #2:\nNespravny vstup.\n"
+
+[[test]]
+input  = "4 abcd\n"
+output = "Obdelnik #1:\nNespravny vstup.\n"
