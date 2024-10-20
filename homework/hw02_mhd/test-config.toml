@@ -1,0 +1,23 @@
+[[test]]
+input  = "0:24\n0:44\n0:27\n"
+output = "Interval spoje #1:\nInterval spoje #2:\nCas od odjezdu spoje #2:\nSpoj #2 bude odjizdet 1 minutu po prijezdu spoje #1 za 3:12.\n"
+
+[[test]]
+input  = "0:17\n0:12\n0:4\n"
+output = "Interval spoje #1:\nInterval spoje #2:\nCas od odjezdu spoje #2:\nSpoj #2 bude odjizdet 1 minutu po prijezdu spoje #1 za 3:07.\n"
+
+[[test]]
+input  = "0:17\n0:12\n0:11\n"
+output = "Interval spoje #1:\nInterval spoje #2:\nCas od odjezdu spoje #2:\nSpoj #2 bude odjizdet 1 minutu po prijezdu spoje #1 prave nyni.\n"
+
+[[test]]
+input  = "0:16\n0:12\n0:6\n"
+output = "Interval spoje #1:\nInterval spoje #2:\nCas od odjezdu spoje #2:\nSpoj #2 nikdy nebude odjizdet 1 minutu po prijezdu spoje #1.\n"
+
+[[test]]
+input  = "0:16\n0:12\n0:15\n"
+output = "Interval spoje #1:\nInterval spoje #2:\nCas od odjezdu spoje #2:\nNespravny vstup.\n"
+
+[[test]]
+input  = "test\n"
+output = "Interval spoje #1:\nNespravny vstup.\n"
