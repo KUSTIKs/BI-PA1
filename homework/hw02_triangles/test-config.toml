@@ -1,0 +1,19 @@
+[[test]]
+input  = "? <10;30>\n? <8;60>\n# <8;60>\n# <7;120>\n"
+output = "Problemy:\n* 12 16 20\n* 15 20 25\n* 18 24 30\n* 10 24 26\n* 20 21 29\nCelkem: 5\n* 9 12 15\n* 12 16 20\n* 15 20 25\n* 18 24 30\n* 21 28 35\n* 24 32 40\n* 27 36 45\n* 30 40 50\n* 33 44 55\n* 36 48 60\n* 10 24 26\n* 15 36 39\n* 20 48 52\n* 8 15 17\n* 16 30 34\n* 24 45 51\n* 14 48 50\n* 20 21 29\n* 40 42 58\n* 9 40 41\n* 12 35 37\n* 28 45 53\nCelkem: 22\nCelkem: 22\nCelkem: 63\n"
+
+[[test]]
+input  = "?<5;15>\n# < 3 ; 45 >\n#<1;200>\n# <10;10>\n"
+output = "Problemy:\n* 6 8 10\n* 9 12 15\n* 5 12 13\nCelkem: 3\nCelkem: 18\nCelkem: 127\nCelkem: 0\n"
+
+[[test]]
+input  = "* <3;9>\n"
+output = "Problemy:\nNespravny vstup.\n"
+
+[[test]]
+input  = "# <12;11>\n"
+output = "Problemy:\nNespravny vstup.\n"
+
+[[test]]
+input  = "? 10;20\n"
+output = "Problemy:\nNespravny vstup.\n"
