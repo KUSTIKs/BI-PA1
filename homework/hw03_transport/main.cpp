@@ -101,6 +101,16 @@ unsigned getWeekday(struct TDate date) {
   return (dateToDays(date) + 5) % DAYS_IN_WEEK;
 }
 
+long long getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
+  if (weekday == SATURDAY) {
+    return ceil(perWorkDay / 2.0);
+  } else if (weekday == SUNDAY) {
+    return ceil(perWorkDay / 3.0);
+  }
+
+  return perWorkDay;
+}
+
 long long countConnections(
     struct TDate from, struct TDate to, unsigned perWorkDay, unsigned dowMask
 ) {
@@ -133,13 +143,7 @@ long long countConnections(
 
     unsigned matchWeeksCount =
         ceil((double)(daysBetween - firstTargetIndex) / DAYS_IN_WEEK);
-    unsigned weekdayConnections = perWorkDay;
-
-    if (weekday == SATURDAY) {
-      weekdayConnections = ceil(weekdayConnections / 2.0);
-    } else if (weekday == SUNDAY) {
-      weekdayConnections = ceil(weekdayConnections / 3.0);
-    }
+    unsigned weekdayConnections = getConnectionsForWeekday(weekday, perWorkDay);
 
     // printf("  firstTargetIndex: %u\n", firstTargetIndex);
     // printf("  matchWeeksCount: %u\n", matchWeeksCount);
