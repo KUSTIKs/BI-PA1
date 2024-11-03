@@ -34,6 +34,8 @@ struct TDate makeDate(unsigned y, unsigned m, unsigned d) {
 
 #define FEBRUARY 2
 
+typedef long long int i64;
+
 const unsigned weekdayMasks[DAYS_IN_WEEK] = {
     DOW_MON, DOW_TUE, DOW_WED, DOW_THU, DOW_FRI, DOW_SAT, DOW_SUN,
 };
@@ -48,60 +50,100 @@ enum Weekday {
   SUNDAY = 6,
 };
 
+int mod(int a, int b) {
+  return (a % b + b) % b;
+}
+
 bool isLeap(unsigned year) {
-  return ((year % 4 == 0) && (year % 100 != 0)) ||
-         ((year % 400 == 0) && (year % 4000 != 0));
+  bool leap4 = year % 4 == 0;
+  bool leap100 = year % 100 == 0;
+  bool leap400 = year % 400 == 0;
+  bool leap4000 = year % 4000 == 0;
+
+  return (leap4 && !leap100) || (leap400 && !leap4000);
+}
+
+unsigned countLeapYears(unsigned year) {
+  unsigned leapYearsCount = 0;
+
+  leapYearsCount += year / 4;
+  leapYearsCount -= year / 100;
+  leapYearsCount += year / 400;
+  leapYearsCount -= year / 4000;
+
+  return leapYearsCount;
+}
+
+unsigned daysInMonth(unsigned month, bool isLeap) {
+  switch (month) {
+    case FEBRUARY:
+      return isLeap ? 29 : 28;
+
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+      return 30;
+
+    default:
+      return 31;
+  }
 }
 
 bool isValidDate(struct TDate date) {
-  if (date.m_Month == FEBRUARY) {
-    unsigned maxDay = isLeap(date.m_Year) ? 29 : 28;
+  if (date.m_Year < 2000) return false;
+  if (date.m_Month < 1 || date.m_Month > 12) return false;
 
-    return date.m_Day <= maxDay;
-  } else if (date.m_Month % 2 == 1) {
-    return date.m_Day <= 30;
-  }
+  unsigned maxDays = daysInMonth(date.m_Month, isLeap(date.m_Year));
+  if (date.m_Day < 1 || date.m_Day > maxDays) return false;
 
-  return date.m_Day <= 31;
+  return true;
 }
 
-unsigned dateToDays(struct TDate date) {
-  unsigned fullYearsFromBase = date.m_Year - BASE_YEAR;
+i64 dateToDays(struct TDate date) {
+  i64 fullYearsFromBase = date.m_Year - BASE_YEAR;
 
-  unsigned daysInYear = fullYearsFromBase * DAYS_IN_YEAR;
+  unsigned dateLeapYears = countLeapYears(date.m_Year - 1);
+  unsigned baseLeapYears = countLeapYears(BASE_YEAR - 1);
+  unsigned leapYears = dateLeapYears - baseLeapYears;
 
-  daysInYear += fullYearsFromBase / 4;
-  daysInYear -= fullYearsFromBase / 100;
-  daysInYear += fullYearsFromBase / 400;
-  daysInYear -= fullYearsFromBase / 4000;
+  i64 daysInYear = fullYearsFromBase * DAYS_IN_YEAR + leapYears;
 
-  unsigned monthCount = date.m_Month - 1;
-  unsigned daysInMonth = monthCount * 31;
-
-  daysInMonth -= monthCount / 2;
-
-  if (monthCount >= FEBRUARY) {
-    if (isLeap(fullYearsFromBase)) {
-      daysInMonth -= 1;
-    } else {
-      daysInMonth -= 2;
-    }
+  unsigned daysInMonths = 0;
+  for (unsigned month = 1; month < date.m_Month; month += 1) {
+    daysInMonths += daysInMonth(month, isLeap(date.m_Year));
   }
 
-  return daysInYear + daysInMonth + date.m_Day - 1;
+  return daysInYear + daysInMonths + date.m_Day - 1;
 }
 
-unsigned getDaysBetween(struct TDate startDate, struct TDate endDate) {
+struct TDate daysToDate(i64 days) {
+  struct TDate date = {BASE_YEAR, 1, 1};
+
+  while (days >= DAYS_IN_YEAR + isLeap(date.m_Year)) {
+    days -= DAYS_IN_YEAR + isLeap(date.m_Year);
+    date.m_Year += 1;
+  }
+
+  while (days >= daysInMonth(date.m_Month, isLeap(date.m_Year))) {
+    days -= daysInMonth(date.m_Month, isLeap(date.m_Year));
+    date.m_Month += 1;
+  }
+
+  date.m_Day += days;
+
+  return date;
+}
+
+i64 getDaysBetween(struct TDate startDate, struct TDate endDate) {
   return dateToDays(endDate) - dateToDays(startDate) + 1;
 }
 
 unsigned getWeekday(struct TDate date) {
-  // +5 is -2 (mod 7). base date (0.0.2000) is saturday
-
   return (dateToDays(date) + 5) % DAYS_IN_WEEK;
 }
 
-long long getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
+i64 getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
   if (weekday == SATURDAY) {
     return ceil(perWorkDay / 2.0);
   } else if (weekday == SUNDAY) {
@@ -111,15 +153,14 @@ long long getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
   return perWorkDay;
 }
 
-long long countConnections(
+i64 countConnections(
     struct TDate from, struct TDate to, unsigned perWorkDay, unsigned dowMask
 ) {
   if (!isValidDate(from) || !isValidDate(to)) return -1;
 
-  long long count = 0;
+  i64 count = 0;
 
   unsigned fromWeekday = getWeekday(from);
-  unsigned toWeekday = getWeekday(to);
   unsigned daysBetween = getDaysBetween(from, to);
 
   //   printf("fromWeekday is %d\n", fromWeekday);
@@ -136,16 +177,16 @@ long long countConnections(
 
     if ((dowMask & weekdayMasks[weekday]) == 0) continue;
 
-    unsigned firstTargetIndex =
-        (weekday - fromWeekday + DAYS_IN_WEEK) % DAYS_IN_WEEK;
+    unsigned firstTargetDay = mod(weekday - fromWeekday, DAYS_IN_WEEK);
 
-    if (daysBetween < firstTargetIndex) continue;
+    if (daysBetween < firstTargetDay) continue;
 
-    unsigned matchWeeksCount =
-        ceil((double)(daysBetween - firstTargetIndex) / DAYS_IN_WEEK);
+    unsigned shiftedDaysBetween = daysBetween - firstTargetDay;
+    unsigned matchWeeksCount = ceil(shiftedDaysBetween / (double)DAYS_IN_WEEK);
+
     unsigned weekdayConnections = getConnectionsForWeekday(weekday, perWorkDay);
 
-    // printf("  firstTargetIndex: %u\n", firstTargetIndex);
+    // printf("  firstTargetDay: %u\n", firstTargetDay);
     // printf("  matchWeeksCount: %u\n", matchWeeksCount);
     // printf("  weekdayConnections: %u\n", weekdayConnections);
     // printf("\n");
