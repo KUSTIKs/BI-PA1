@@ -34,7 +34,7 @@ struct TDate makeDate(unsigned y, unsigned m, unsigned d) {
 
 #define FEBRUARY 2
 
-typedef long long int i64;
+typedef long long int int64;
 
 const unsigned weekdayMasks[DAYS_IN_WEEK] = {
     DOW_MON, DOW_TUE, DOW_WED, DOW_THU, DOW_FRI, DOW_SAT, DOW_SUN,
@@ -100,14 +100,14 @@ bool isValidDate(struct TDate date) {
   return true;
 }
 
-i64 dateToDays(struct TDate date) {
-  i64 fullYearsFromBase = date.m_Year - BASE_YEAR;
+int64 dateToDays(struct TDate date) {
+  int64 fullYearsFromBase = date.m_Year - BASE_YEAR;
 
   unsigned dateLeapYears = countLeapYears(date.m_Year - 1);
   unsigned baseLeapYears = countLeapYears(BASE_YEAR - 1);
   unsigned leapYears = dateLeapYears - baseLeapYears;
 
-  i64 daysInYear = fullYearsFromBase * DAYS_IN_YEAR + leapYears;
+  int64 daysInYear = fullYearsFromBase * DAYS_IN_YEAR + leapYears;
 
   unsigned daysInMonths = 0;
   for (unsigned month = 1; month < date.m_Month; month += 1) {
@@ -117,7 +117,7 @@ i64 dateToDays(struct TDate date) {
   return daysInYear + daysInMonths + date.m_Day - 1;
 }
 
-struct TDate daysToDate(i64 days) {
+struct TDate daysToDate(int64 days) {
   struct TDate date = {BASE_YEAR, 1, 1};
 
   while (days >= DAYS_IN_YEAR + isLeap(date.m_Year)) {
@@ -135,7 +135,7 @@ struct TDate daysToDate(i64 days) {
   return date;
 }
 
-i64 getDaysBetween(struct TDate startDate, struct TDate endDate) {
+int64 getDaysBetween(struct TDate startDate, struct TDate endDate) {
   return dateToDays(endDate) - dateToDays(startDate) + 1;
 }
 
@@ -143,7 +143,7 @@ unsigned getWeekday(struct TDate date) {
   return (dateToDays(date) + 5) % DAYS_IN_WEEK;
 }
 
-i64 getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
+int64 getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
   if (weekday == SATURDAY) {
     return ceil(perWorkDay / 2.0);
   } else if (weekday == SUNDAY) {
@@ -153,12 +153,12 @@ i64 getConnectionsForWeekday(unsigned weekday, unsigned perWorkDay) {
   return perWorkDay;
 }
 
-i64 countConnections(
+int64 countConnections(
     struct TDate from, struct TDate to, unsigned perWorkDay, unsigned dowMask
 ) {
   if (!isValidDate(from) || !isValidDate(to)) return -1;
 
-  i64 count = 0;
+  int64 count = 0;
 
   unsigned fromWeekday = getWeekday(from);
   unsigned daysBetween = getDaysBetween(from, to);
@@ -199,12 +199,71 @@ i64 countConnections(
   return count;
 }
 
-// struct TDate endDate(
-//     struct TDate from, long long connections, unsigned perWorkDay,
-//     unsigned dowMask
-// ) {
-//   // todo
-// }
+struct TDate endDate(
+    struct TDate from, int64 connections, unsigned perWorkDay, unsigned dowMask
+) {
+  if (!isValidDate(from) || dowMask == 0 || perWorkDay == 0) {
+    return {0, 0, 0};
+  };
+  // printf("from: %02d.%02d.%d\n", from.m_Day, from.m_Month, from.m_Year);
+
+  unsigned fromWeekday = getWeekday(from);
+  int64 fromDays = dateToDays(from);
+
+  int64 daysBetween = 0;
+  unsigned targetWeekdaysCount = 0;
+  unsigned connectionsPerWeek = 0;
+  int firstTargetDay = -1;
+
+  for (unsigned shift = 0; shift < DAYS_IN_WEEK; shift += 1) {
+    unsigned weekday = mod(fromWeekday + shift, DAYS_IN_WEEK);
+
+    if ((dowMask & weekdayMasks[weekday]) == 0) continue;
+
+    if (firstTargetDay == -1) {
+      firstTargetDay = weekday;
+    }
+
+    connectionsPerWeek += getConnectionsForWeekday(weekday, perWorkDay);
+    targetWeekdaysCount += 1;
+  }
+
+  daysBetween += mod(firstTargetDay - 1, DAYS_IN_WEEK);
+
+  // printf("firstTargetDay: %d\n", firstTargetDay);
+  // printf("connectionsPerWeek: %d\n", connectionsPerWeek);
+  // printf("daysBetween: %lld\n", daysBetween);
+
+  unsigned fullWeeks = connections / connectionsPerWeek;
+  int connectionsLeft = connections % connectionsPerWeek;
+
+  daysBetween += fullWeeks * DAYS_IN_WEEK;
+  // printf("fullWeeks: %d\n", fullWeeks);
+  // printf("connectionsLeft: %d\n", connectionsLeft);
+  // printf("daysBetween: %lld\n", daysBetween);
+
+  for (unsigned shift = 0; shift < DAYS_IN_WEEK; shift += 1) {
+    unsigned weekday = mod(firstTargetDay + shift, DAYS_IN_WEEK);
+    // struct TDate date = daysToDate(fromDays + daysBetween - 1);
+    // printf("date: %d.%d.%d\n", date.m_Day, date.m_Month, date.m_Year);
+    // printf("weekday: %d\n", weekday);
+
+    if ((dowMask & weekdayMasks[weekday]) == 0) continue;
+
+    connectionsLeft -= getConnectionsForWeekday(weekday, perWorkDay);
+    // printf("connectionsLeft: %d\n", connectionsLeft);
+
+    if (connectionsLeft < 0) break;
+
+    daysBetween += 1;
+  }
+
+  // printf("daysBetween: %lld\n", daysBetween);
+
+  struct TDate to = daysToDate(fromDays + daysBetween - 1);
+
+  return to;
+}
 
 #ifndef __PROGTEST__
 int main() {
@@ -286,22 +345,22 @@ int main() {
           makeDate(4000, 2, 29), makeDate(4000, 2, 29), 1, DOW_ALL
       ) == -1
   );
-  //   d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_ALL);
-  //   assert(d.m_Year == 2025 && d.m_Month == 1 && d.m_Day == 8);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 6, DOW_ALL);
-  //   assert(d.m_Year == 2024 && d.m_Month == 10 && d.m_Day == 20);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_WORKDAYS);
-  //   assert(d.m_Year == 2025 && d.m_Month == 2 && d.m_Day == 17);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 4, DOW_WORKDAYS);
-  //   assert(d.m_Year == 2024 && d.m_Month == 11 && d.m_Day == 4);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_THU);
-  //   assert(d.m_Year == 2026 && d.m_Month == 9 && d.m_Day == 2);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 2, DOW_THU);
-  //   assert(d.m_Year == 2025 && d.m_Month == 9 && d.m_Day == 17);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 0, DOW_THU);
-  //   assert(d.m_Year == 0 && d.m_Month == 0 && d.m_Day == 0);
-  //   d = endDate(makeDate(2024, 10, 1), 100, 1, 0);
-  //   assert(d.m_Year == 0 && d.m_Month == 0 && d.m_Day == 0);
-  //   return EXIT_SUCCESS;
+  d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_ALL);
+  assert(d.m_Year == 2025 && d.m_Month == 1 && d.m_Day == 8);
+  d = endDate(makeDate(2024, 10, 1), 100, 6, DOW_ALL);
+  assert(d.m_Year == 2024 && d.m_Month == 10 && d.m_Day == 20);
+  d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_WORKDAYS);
+  assert(d.m_Year == 2025 && d.m_Month == 2 && d.m_Day == 17);
+  d = endDate(makeDate(2024, 10, 1), 100, 4, DOW_WORKDAYS);
+  assert(d.m_Year == 2024 && d.m_Month == 11 && d.m_Day == 4);
+  d = endDate(makeDate(2024, 10, 1), 100, 1, DOW_THU);
+  assert(d.m_Year == 2026 && d.m_Month == 9 && d.m_Day == 2);
+  d = endDate(makeDate(2024, 10, 1), 100, 2, DOW_THU);
+  assert(d.m_Year == 2025 && d.m_Month == 9 && d.m_Day == 17);
+  d = endDate(makeDate(2024, 10, 1), 100, 0, DOW_THU);
+  assert(d.m_Year == 0 && d.m_Month == 0 && d.m_Day == 0);
+  d = endDate(makeDate(2024, 10, 1), 100, 1, 0);
+  assert(d.m_Year == 0 && d.m_Month == 0 && d.m_Day == 0);
+  return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
