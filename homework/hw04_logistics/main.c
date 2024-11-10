@@ -2,40 +2,53 @@
 #include <stdio.h>
 
 #define MAX_CAPACITY 100000
+typedef int long long int64;
+
+typedef struct LogisticsInfo {
+  int64 capacity;
+  int64 price;
+} LogisticsInfo;
 
 typedef struct Vehicle {
-  int avaliableFrom;
-  int avaliableTo;
-  int capacity;
-  int price;
+  int64 avaliableFrom;
+  int64 avaliableTo;
+  LogisticsInfo logistics;
 } Vehicle;
 
-typedef struct ReadVehiclesResult {
+typedef struct LogisticsCalendar {
+  int64 avaliableFrom;
+  int64 avaliableTo;
+  LogisticsInfo dayMap[MAX_CAPACITY];
+} LogisticsCalendar;
+
+typedef struct ReadLogisticsResult {
   bool isSuccess;
-  int vehiclesCount;
-} ReadVehiclesResult;
+  int64 vehiclesCount;
+  LogisticsCalendar logisticsCalendar;
+} ReadLogisticsResult;
 
 typedef struct Problem {
-  int startDay;
-  int cargoes;
+  int64 startDay;
+  int64 cargoes;
 } Problem;
 
 typedef struct ReadProblemResult {
   bool isSuccess;
-  int isEOF;
+  bool isEOF;
 } ReadProblemResult;
 
 bool isValidVehicle(Vehicle *vehicle) {
   bool isValidFrom = vehicle->avaliableFrom >= 0;
   bool isValidTo = vehicle->avaliableTo >= vehicle->avaliableFrom;
-  bool isValidCapacity = vehicle->capacity > 0;
-  bool isValidPrice = vehicle->price > 0;
+  bool isValidCapacity = vehicle->logistics.capacity > 0;
+  bool isValidPrice = vehicle->logistics.price > 0;
 
   return isValidFrom && isValidTo && isValidCapacity && isValidPrice;
 }
 
-ReadVehiclesResult readVehicles(Vehicle vehicles[]) {
-  ReadVehiclesResult result = {false, 0};
+ReadLogisticsResult readLogistics() {
+  ReadLogisticsResult result = {false, 0, {0, 0, {}}};
+  LogisticsCalendar *calendar = &result.logisticsCalendar;
 
   printf("Moznosti dopravy:\n");
 
@@ -49,13 +62,27 @@ ReadVehiclesResult readVehicles(Vehicle vehicles[]) {
     char endChar;
 
     int elementsRead = scanf(
-        " [ %d - %d , %d , %d ] %c", &vehicle.avaliableFrom,
-        &vehicle.avaliableTo, &vehicle.capacity, &vehicle.price, &endChar
+        " [ %lld - %lld , %lld , %lld ] %c", &vehicle.avaliableFrom,
+        &vehicle.avaliableTo, &vehicle.logistics.capacity,
+        &vehicle.logistics.price, &endChar
     );
 
     if (elementsRead != 5 || !isValidVehicle(&vehicle)) return result;
 
-    vehicles[result.vehiclesCount] = vehicle;
+    if (vehicle.avaliableFrom < calendar->avaliableFrom) {
+      calendar->avaliableFrom = vehicle.avaliableFrom;
+    }
+
+    if (vehicle.avaliableTo > calendar->avaliableTo) {
+      calendar->avaliableTo = vehicle.avaliableTo;
+    }
+
+    for (int64 day = vehicle.avaliableFrom; day <= vehicle.avaliableTo;
+         day += 1) {
+      calendar->dayMap[day].capacity += vehicle.logistics.capacity;
+      calendar->dayMap[day].price += vehicle.logistics.price;
+    }
+
     result.vehiclesCount += 1;
 
     if (endChar == '}') break;
@@ -76,7 +103,7 @@ bool isValidProblem(Problem *problem) {
 ReadProblemResult readProblem(Problem *problem) {
   ReadProblemResult result = {false, false};
 
-  int elementsRead = scanf(" %d %d", &problem->startDay, &problem->cargoes);
+  int elementsRead = scanf(" %lld %lld", &problem->startDay, &problem->cargoes);
 
   if (elementsRead == EOF) {
     result.isEOF = true;
@@ -89,50 +116,44 @@ ReadProblemResult readProblem(Problem *problem) {
   return result;
 }
 
-void solveProblem(Problem *problem, Vehicle vehicles[], int vehiclesCount) {
-  int day = problem->startDay;
-  int cargoesLeft = problem->cargoes;
-  int totalPrice = 0;
+void solveProblem(Problem *problem, LogisticsCalendar *calendar) {
+  int64 minDay = calendar->avaliableFrom;
+  int64 maxDay = calendar->avaliableTo;
 
-  int maxDay = 0;
-  for (int i = 0; i < vehiclesCount; i += 1) {
-    Vehicle *vehicle = &vehicles[i];
+  while (minDay <= maxDay) {
+    int64 midDay = minDay + (maxDay - minDay) / 2;
 
-    if (vehicle->avaliableTo <= maxDay) continue;
-
-    maxDay = vehicle->avaliableTo;
-  }
-
-  while (day <= maxDay) {
-    for (int i = 0; i < vehiclesCount; i += 1) {
-      Vehicle *vehicle = &vehicles[i];
-
-      bool isInRange =
-          vehicle->avaliableFrom <= day && vehicle->avaliableTo >= day;
-      if (!isInRange) continue;
-
-      cargoesLeft -= vehicle->capacity;
-      totalPrice += vehicle->price;
+    LogisticsInfo totalLogistics = {0, 0};
+    for (int64 day = problem->startDay; day <= midDay; day += 1) {
+      totalLogistics.capacity += calendar->dayMap[day].capacity;
+      totalLogistics.price += calendar->dayMap[day].price;
     }
 
-    if (cargoesLeft <= 0) break;
+    bool todayMatch = totalLogistics.capacity >= problem->cargoes;
+    bool yesterdayMatch =
+        midDay > minDay &&
+        totalLogistics.capacity - calendar->dayMap[midDay].capacity >=
+            problem->cargoes;
 
-    day += 1;
+    if (todayMatch && !yesterdayMatch) {
+      printf("Konec: %lld, cena: %lld\n", midDay, totalLogistics.price);
+      return;
+    }
+
+    if (totalLogistics.capacity < problem->cargoes) {
+      minDay = midDay + 1;
+    } else {
+      maxDay = midDay - 1;
+    }
   }
 
-  if (cargoesLeft > 0) {
-    printf("Prilis velky naklad, nelze odvezt.\n");
-    return;
-  }
-
-  printf("Konec: %d, cena: %d\n", day, totalPrice);
+  printf("Prilis velky naklad, nelze odvezt.\n");
+  return;
 }
 
 int main() {
-  Vehicle vehicles[MAX_CAPACITY];
-
-  ReadVehiclesResult vehiclesResult = readVehicles(vehicles);
-  if (!vehiclesResult.isSuccess) {
+  ReadLogisticsResult logisticsResult = readLogistics();
+  if (!logisticsResult.isSuccess) {
     printf("Nespravny vstup.\n");
     return 0;
   }
@@ -148,7 +169,7 @@ int main() {
       return 0;
     }
 
-    solveProblem(&problem, vehicles, vehiclesResult.vehiclesCount);
+    solveProblem(&problem, &logisticsResult.logisticsCalendar);
   }
 
   return 0;
