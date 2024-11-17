@@ -5,6 +5,12 @@
 #define SET_PRICE_SYMBOL '+'
 #define GET_PRICE_SYMBOL '?'
 
+typedef struct Array {
+  int* array;
+  size_t capacity;
+  size_t length;
+} Array;
+
 typedef enum InstrType {
   SET_PRICE,
   GET_PRICE,
@@ -39,6 +45,27 @@ typedef struct ParseInstrTypeResult {
   bool isSuccess;
   InstrType type;
 } ParseInstrTypeResult;
+
+void initArray(Array* array, size_t capacity) {
+  array->array = (int*)malloc(capacity * sizeof(int));
+  array->capacity = capacity;
+  array->length = 0;
+}
+
+void pushArray(Array* array, int value) {
+  if (array->capacity == array->length) {
+    array->capacity += 100;
+    array->array = (int*)realloc(array->array, array->capacity * sizeof(int));
+  }
+
+  array->array[array->length] = value;
+  array->length += 1;
+}
+
+void freeArray(Array* array) {
+  free(array->array);
+  array->length = 0;
+}
 
 ParseInstrTypeResult parseInstrType(char symbol) {
   ParseInstrTypeResult result = {false, SET_PRICE};
@@ -124,6 +151,9 @@ ReadInstrResult readInstr() {
 }
 
 int main() {
+  Array priceRecords;
+  initArray(&priceRecords, 100);
+
   while (true) {
     ReadInstrResult result = readInstr();
 
@@ -133,7 +163,22 @@ int main() {
 
     if (!result.isSuccess) {
       printf("Nespravny vstup.\n");
-      return 0;
+      break;
+    }
+
+    if (result.instr.type == SET_PRICE) {
+      pushArray(&priceRecords, result.instr.value.setPrice.price);
     }
   }
+
+  printf("priceRecords: [");
+  for (size_t i = 0; i < priceRecords.length; i += 1) {
+    printf("%d", priceRecords.array[i]);
+    if (i != priceRecords.length - 1) {
+      printf(", ");
+    }
+  }
+  printf("];\n");
+
+  freeArray(&priceRecords);
 }
