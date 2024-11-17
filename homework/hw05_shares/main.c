@@ -7,9 +7,13 @@
 
 typedef struct Array {
   int* array;
-  size_t capacity;
-  size_t length;
+  int capacity;
+  int length;
 } Array;
+
+typedef struct Context {
+  Array* priceRecords;
+} Context;
 
 typedef enum InstrType {
   SET_PRICE,
@@ -35,6 +39,12 @@ typedef struct Instr {
   InstrUnion value;
 } Instr;
 
+typedef struct ProfitRecord {
+  int from;
+  int to;
+  int value;
+} ProfitRecord;
+
 typedef struct ReadInstrResult {
   bool isSuccess;
   bool isEof;
@@ -45,6 +55,10 @@ typedef struct ParseInstrTypeResult {
   bool isSuccess;
   InstrType type;
 } ParseInstrTypeResult;
+
+typedef struct HandleInstrResult {
+  bool isSuccess;
+} HandleInstrResult;
 
 void initArray(Array* array, size_t capacity) {
   array->array = (int*)malloc(capacity * sizeof(int));
@@ -150,35 +164,100 @@ ReadInstrResult readInstr() {
   }
 }
 
+void printAbsProfit(const char* label, ProfitRecord* profit) {
+  printf("%s: ", label);
+  if (profit->value == 0) {
+    printf("N/A");
+  } else {
+    printf("%d (%d - %d)", abs(profit->value), profit->from, profit->to);
+  }
+  printf("\n");
+}
+
+HandleInstrResult handleGetPriceInstr(Context* context, Instr* instr) {
+  HandleInstrResult result = {false};
+  GetPriceInstr getPriceInstr = instr->value.getPrice;
+
+  if (getPriceInstr.to >= context->priceRecords->length) {
+    return result;
+  }
+
+  ProfitRecord maxProfit = {0, 0, 0};
+  ProfitRecord minProfit = {0, 0, 0};
+
+  for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
+    int currentPrice = context->priceRecords->array[i];
+
+    for (int j = getPriceInstr.from; j < i; j += 1) {
+      int prevPrice = context->priceRecords->array[j];
+      int priceDiff = currentPrice - prevPrice;
+
+      if (priceDiff > maxProfit.value) {
+        maxProfit.from = j;
+        maxProfit.to = i;
+        maxProfit.value = priceDiff;
+      } else if (priceDiff < minProfit.value) {
+        minProfit.from = j;
+        minProfit.to = i;
+        minProfit.value = priceDiff;
+      }
+    }
+  }
+
+  printAbsProfit("Nejvyssi zisk", &maxProfit);
+  printAbsProfit("Nejvyssi ztrata", &minProfit);
+
+  result.isSuccess = true;
+  return result;
+}
+
+HandleInstrResult handleSetPriceInstr(Context* context, Instr* instr) {
+  HandleInstrResult result = {false};
+
+  pushArray(context->priceRecords, instr->value.setPrice.price);
+
+  result.isSuccess = true;
+  return result;
+}
+
+HandleInstrResult handleInstr(Context* context, Instr* instr) {
+  switch (instr->type) {
+    case SET_PRICE:
+      return handleSetPriceInstr(context, instr);
+    default:
+      return handleGetPriceInstr(context, instr);
+  }
+}
+
 int main() {
   Array priceRecords;
   initArray(&priceRecords, 100);
 
-  while (true) {
-    ReadInstrResult result = readInstr();
+  Context context;
+  context.priceRecords = &priceRecords;
 
-    if (result.isEof) {
+  printf("Ceny, hledani:\n");
+
+  while (true) {
+    ReadInstrResult readInstrResult = readInstr();
+
+    if (readInstrResult.isEof) {
       break;
     }
 
-    if (!result.isSuccess) {
+    if (!readInstrResult.isSuccess) {
       printf("Nespravny vstup.\n");
       break;
     }
 
-    if (result.instr.type == SET_PRICE) {
-      pushArray(&priceRecords, result.instr.value.setPrice.price);
-    }
-  }
+    HandleInstrResult handleInstrResult =
+        handleInstr(&context, &readInstrResult.instr);
 
-  printf("priceRecords: [");
-  for (size_t i = 0; i < priceRecords.length; i += 1) {
-    printf("%d", priceRecords.array[i]);
-    if (i != priceRecords.length - 1) {
-      printf(", ");
+    if (!handleInstrResult.isSuccess) {
+      printf("Nespravny vstup.\n");
+      break;
     }
   }
-  printf("];\n");
 
   freeArray(&priceRecords);
 }
