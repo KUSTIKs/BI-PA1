@@ -177,68 +177,35 @@ void printAbsProfit(const char* label, ProfitRecord* profit) {
 HandleInstrResult handleGetPriceInstr(Context* context, Instr* instr) {
   HandleInstrResult result = {false};
   GetPriceInstr getPriceInstr = instr->value.getPrice;
-  int* priceRecordsArr = context->priceRecords->array;
 
   if (getPriceInstr.to >= context->priceRecords->length) {
     return result;
   }
 
   ProfitRecord maxProfit = {0, 0, 0};
-  ProfitRecord profit = {0, 0, 0};
-  ProfitRecord maxLoss = {0, 0, 0};
-  ProfitRecord loss = {0, 0, 0};
+  ProfitRecord minProfit = {0, 0, 0};
 
   for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
-    int currentPrice = priceRecordsArr[i];
-    int fromPrice = priceRecordsArr[profit.from];
-    int priceDiff = currentPrice - fromPrice;
+    int currentPrice = context->priceRecords->array[i];
 
-    if (priceDiff > profit.value) {
-      profit.to = i;
-      profit.value = priceDiff;
-    } else {
-      if (profit.value > maxProfit.value) {
-        maxProfit = profit;
+    for (int j = getPriceInstr.from; j < i; j += 1) {
+      int prevPrice = context->priceRecords->array[j];
+      int priceDiff = currentPrice - prevPrice;
+
+      if (priceDiff > maxProfit.value) {
+        maxProfit.from = j;
+        maxProfit.to = i;
+        maxProfit.value = priceDiff;
+      } else if (priceDiff < minProfit.value) {
+        minProfit.from = j;
+        minProfit.to = i;
+        minProfit.value = priceDiff;
       }
-
-      profit.from = i;
-      profit.to = i;
-      profit.value = 0;
     }
-  }
-
-  if (profit.value > maxProfit.value) {
-    maxProfit = profit;
-  }
-
-  ProfitRecord maxLoss = {0, 0, 0};
-  ProfitRecord loss = {0, 0, 0};
-
-  for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
-    int currentPrice = priceRecordsArr[i];
-    int fromPrice = priceRecordsArr[loss.from];
-    int priceDiff = fromPrice - currentPrice;
-
-    if (priceDiff > loss.value) {
-      loss.to = i;
-      loss.value = priceDiff;
-    } else {
-      if (loss.value > maxLoss.value) {
-        maxLoss = loss;
-      }
-
-      loss.from = i;
-      loss.to = i;
-      loss.value = 0;
-    }
-  }
-
-  if (loss.value > maxLoss.value) {
-    maxLoss = loss;
   }
 
   printAbsProfit("Nejvyssi zisk", &maxProfit);
-  printAbsProfit("Nejvyssi ztrata", &maxLoss);
+  printAbsProfit("Nejvyssi ztrata", &minProfit);
 
   result.isSuccess = true;
   return result;
