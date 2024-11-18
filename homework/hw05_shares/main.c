@@ -11,8 +11,16 @@ typedef struct Array {
   int length;
 } Array;
 
+typedef struct MinMaxArrays {
+  Array minLeft;
+  Array maxRight;
+  Array minRight;
+  Array maxLeft;
+} MinMaxArrays;
+
 typedef struct Context {
   Array* priceRecords;
+  MinMaxArrays* minMaxArrays;
 } Context;
 
 typedef enum InstrType {
@@ -60,6 +68,14 @@ typedef struct HandleInstrResult {
   bool isSuccess;
 } HandleInstrResult;
 
+int min(int a, int b) {
+  return a < b ? a : b;
+}
+
+int max(int a, int b) {
+  return a > b ? a : b;
+}
+
 void initArray(Array* array, size_t capacity) {
   array->array = (int*)malloc(capacity * sizeof(int));
   array->capacity = capacity;
@@ -79,6 +95,37 @@ void pushArray(Array* array, int value) {
 void freeArray(Array* array) {
   free(array->array);
   array->length = 0;
+}
+
+MinMaxArrays computeMinMaxArrays(Array* array) {
+  MinMaxArrays minMaxArrays;
+  initArray(&minMaxArrays.minLeft, array->length);
+  initArray(&minMaxArrays.maxRight, array->length);
+  initArray(&minMaxArrays.minRight, array->length);
+  initArray(&minMaxArrays.maxLeft, array->length);
+
+  int leftMin = array->array[0];
+  int rightMax = array->array[array->length - 1];
+  int leftMax = array->array[0];
+  int rightMin = array->array[array->length - 1];
+
+  for (int i = 0; i < array->length; i += 1) {
+    leftMin = min(leftMin, array->array[i]);
+    minMaxArrays.minLeft.array[i] = leftMin;
+
+    leftMax = max(leftMax, array->array[i]);
+    minMaxArrays.maxLeft.array[i] = leftMax;
+
+    int j = array->length - i - 1;
+
+    rightMax = max(rightMax, array->array[j]);
+    minMaxArrays.maxRight.array[j] = rightMax;
+
+    rightMin = min(rightMin, array->array[j]);
+    minMaxArrays.minRight.array[j] = rightMin;
+  }
+
+  return minMaxArrays;
 }
 
 ParseInstrTypeResult parseInstrType(char symbol) {
@@ -164,7 +211,7 @@ ReadInstrResult readInstr() {
   }
 }
 
-void printAbsProfit(const char* label, ProfitRecord* profit) {
+void printProfit(const char* label, ProfitRecord* profit) {
   printf("%s: ", label);
   if (profit->value == 0) {
     printf("N/A");
@@ -177,35 +224,38 @@ void printAbsProfit(const char* label, ProfitRecord* profit) {
 HandleInstrResult handleGetPriceInstr(Context* context, Instr* instr) {
   HandleInstrResult result = {false};
   GetPriceInstr getPriceInstr = instr->value.getPrice;
+  Array priceRecords = *context->priceRecords;
 
-  if (getPriceInstr.to >= context->priceRecords->length) {
+  if (getPriceInstr.to >= priceRecords.length) {
     return result;
   }
 
   ProfitRecord maxProfit = {0, 0, 0};
-  ProfitRecord minProfit = {0, 0, 0};
+  ProfitRecord maxLoss = {0, 0, 0};
 
   for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
-    int currentPrice = context->priceRecords->array[i];
+    int leftMin = context->minMaxArrays->minLeft.array[i];
+    int rightMax = context->minMaxArrays->maxRight.array[i];
+    int leftMax = context->minMaxArrays->maxLeft.array[i];
+    int rightMin = context->minMaxArrays->minRight.array[i];
 
-    for (int j = getPriceInstr.from; j < i; j += 1) {
-      int prevPrice = context->priceRecords->array[j];
-      int priceDiff = currentPrice - prevPrice;
+    int profit = rightMax - leftMin;
+    int loss = rightMin - leftMax;
 
-      if (priceDiff > maxProfit.value) {
-        maxProfit.from = j;
-        maxProfit.to = i;
-        maxProfit.value = priceDiff;
-      } else if (priceDiff < minProfit.value) {
-        minProfit.from = j;
-        minProfit.to = i;
-        minProfit.value = priceDiff;
-      }
+    if (profit > maxProfit.value) {
+      maxProfit.from = leftMin;
+      maxProfit.to = rightMax;
+      maxProfit.value = profit;
+    }
+    if (loss < maxLoss.value) {
+      maxLoss.from = leftMax;
+      maxLoss.to = rightMin;
+      maxLoss.value = loss;
     }
   }
 
-  printAbsProfit("Nejvyssi zisk", &maxProfit);
-  printAbsProfit("Nejvyssi ztrata", &minProfit);
+  printProfit("Nejvyssi zisk", &maxProfit);
+  printProfit("Nejvyssi ztrata", &maxLoss);
 
   result.isSuccess = true;
   return result;
@@ -231,10 +281,9 @@ HandleInstrResult handleInstr(Context* context, Instr* instr) {
 
 int main() {
   Array priceRecords;
-  initArray(&priceRecords, 100);
+  Context context = {&priceRecords, NULL};
 
-  Context context;
-  context.priceRecords = &priceRecords;
+  initArray(context.priceRecords, 100);
 
   printf("Ceny, hledani:\n");
 
@@ -247,17 +296,25 @@ int main() {
 
     if (!readInstrResult.isSuccess) {
       printf("Nespravny vstup.\n");
-      break;
+      goto cleaup;
     }
+
+    MinMaxArrays minMaxArrays = computeMinMaxArrays(context.priceRecords);
+    context.minMaxArrays = &minMaxArrays;
 
     HandleInstrResult handleInstrResult =
         handleInstr(&context, &readInstrResult.instr);
 
     if (!handleInstrResult.isSuccess) {
       printf("Nespravny vstup.\n");
-      break;
+      goto cleaup;
     }
   }
 
-  freeArray(&priceRecords);
+cleaup:
+  freeArray(context.priceRecords);
+  freeArray(&context.minMaxArrays->minLeft);
+  freeArray(&context.minMaxArrays->maxRight);
+  freeArray(&context.minMaxArrays->minRight);
+  freeArray(&context.minMaxArrays->maxLeft);
 }
