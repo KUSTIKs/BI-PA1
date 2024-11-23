@@ -90,12 +90,6 @@ void freeArray(Array* array) {
   array->capacity = 0;
 }
 
-PriceChange initPriceChange() {
-  PriceChange change = {.from = 0, .to = 0, .value = 0};
-
-  return change;
-}
-
 ParseInstrTypeResult parseInstrType(char symbol) {
   ParseInstrTypeResult result = {.isSuccess = true};
 
@@ -195,31 +189,48 @@ HandleInstrResult handleGetPriceInstr(Context* context, Instr* instr) {
 
   GetPriceInstr getPriceInstr = instr->value.getPrice;
   Array* priceRecords = &context->priceRecords;
+  int* prices = priceRecords->items;
 
   if (getPriceInstr.to >= priceRecords->length) {
     return result;
   }
 
-  PriceChange maxProfit = initPriceChange();
-  PriceChange maxLoss = initPriceChange();
+  PriceChange maxProfit = {
+      .from = getPriceInstr.from,
+      .to = getPriceInstr.from,
+      .value = 0,
+  };
+  PriceChange maxLoss = maxProfit;
+
+  int minPriceIndex = maxProfit.from;
+  int maxPriceIndex = maxLoss.from;
 
   for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
-    int currentPrice = priceRecords->items[i];
+    int currentPrice = prices[i];
+    int minPrice = prices[minPriceIndex];
+    int profit = currentPrice - minPrice;
 
-    for (int j = getPriceInstr.from; j < i; j += 1) {
-      int prevPrice = priceRecords->items[j];
-      int profit = currentPrice - prevPrice;
-      int loss = prevPrice - currentPrice;
+    if (currentPrice < minPrice) {
+      minPriceIndex = i;
+    }
 
-      if (profit > maxProfit.value) {
-        maxProfit.from = j;
-        maxProfit.to = i;
-        maxProfit.value = profit;
-      } else if (loss > maxLoss.value) {
-        maxLoss.from = j;
-        maxLoss.to = i;
-        maxLoss.value = loss;
-      }
+    if (profit > maxProfit.value) {
+      maxProfit.from = minPriceIndex;
+      maxProfit.to = i;
+      maxProfit.value = profit;
+    }
+
+    int maxPrice = prices[maxPriceIndex];
+    int loss = maxPrice - currentPrice;
+
+    if (currentPrice > maxPrice) {
+      maxPriceIndex = i;
+    }
+
+    if (loss > maxLoss.value) {
+      maxLoss.from = maxPriceIndex;
+      maxLoss.to = i;
+      maxLoss.value = loss;
     }
   }
 
@@ -278,4 +289,5 @@ int main() {
 
 cleaup:
   freeArray(&context.priceRecords);
+  return 0;
 }
