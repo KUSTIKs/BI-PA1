@@ -6,21 +6,13 @@
 #define GET_PRICE_SYMBOL '?'
 
 typedef struct Array {
-  int* array;
+  int* items;
   int capacity;
   int length;
 } Array;
 
-typedef struct MinMaxArrays {
-  Array minLeft;
-  Array maxRight;
-  Array minRight;
-  Array maxLeft;
-} MinMaxArrays;
-
 typedef struct Context {
-  Array* priceRecords;
-  MinMaxArrays* minMaxArrays;
+  Array priceRecords;
 } Context;
 
 typedef enum InstrType {
@@ -47,11 +39,11 @@ typedef struct Instr {
   InstrUnion value;
 } Instr;
 
-typedef struct ProfitRecord {
+typedef struct PriceChange {
   int from;
   int to;
   int value;
-} ProfitRecord;
+} PriceChange;
 
 typedef struct ReadInstrResult {
   bool isSuccess;
@@ -68,79 +60,56 @@ typedef struct HandleInstrResult {
   bool isSuccess;
 } HandleInstrResult;
 
-int min(int a, int b) {
-  return a < b ? a : b;
+Array initArray(size_t capacity) {
+  Array array = {
+      .items = (int*)malloc(capacity * sizeof(int)),
+      .capacity = (int)capacity,
+      .length = 0,
+  };
+
+  return array;
 }
 
-int max(int a, int b) {
-  return a > b ? a : b;
-}
-
-void initArray(Array* array, size_t capacity) {
-  array->array = (int*)malloc(capacity * sizeof(int));
+void resizeArray(Array* array, int capacity) {
   array->capacity = capacity;
-  array->length = 0;
+  array->items = (int*)realloc(array->items, array->capacity * sizeof(int));
 }
 
 void pushArray(Array* array, int value) {
-  if (array->capacity == array->length) {
-    array->capacity += 100;
-    array->array = (int*)realloc(array->array, array->capacity * sizeof(int));
+  if (array->length == array->capacity) {
+    resizeArray(array, array->capacity * 2);
   }
 
-  array->array[array->length] = value;
+  array->items[array->length] = value;
   array->length += 1;
 }
 
 void freeArray(Array* array) {
-  free(array->array);
+  free(array->items);
   array->length = 0;
+  array->capacity = 0;
 }
 
-MinMaxArrays computeMinMaxArrays(Array* array) {
-  MinMaxArrays minMaxArrays;
-  initArray(&minMaxArrays.minLeft, array->length);
-  initArray(&minMaxArrays.maxRight, array->length);
-  initArray(&minMaxArrays.minRight, array->length);
-  initArray(&minMaxArrays.maxLeft, array->length);
+PriceChange initPriceChange() {
+  PriceChange change = {.from = 0, .to = 0, .value = 0};
 
-  int leftMin = array->array[0];
-  int rightMax = array->array[array->length - 1];
-  int leftMax = array->array[0];
-  int rightMin = array->array[array->length - 1];
-
-  for (int i = 0; i < array->length; i += 1) {
-    leftMin = min(leftMin, array->array[i]);
-    minMaxArrays.minLeft.array[i] = leftMin;
-
-    leftMax = max(leftMax, array->array[i]);
-    minMaxArrays.maxLeft.array[i] = leftMax;
-
-    int j = array->length - i - 1;
-
-    rightMax = max(rightMax, array->array[j]);
-    minMaxArrays.maxRight.array[j] = rightMax;
-
-    rightMin = min(rightMin, array->array[j]);
-    minMaxArrays.minRight.array[j] = rightMin;
-  }
-
-  return minMaxArrays;
+  return change;
 }
 
 ParseInstrTypeResult parseInstrType(char symbol) {
-  ParseInstrTypeResult result = {false, SET_PRICE};
+  ParseInstrTypeResult result = {.isSuccess = true};
 
   switch (symbol) {
     case SET_PRICE_SYMBOL: {
-      result.isSuccess = true;
       result.type = SET_PRICE;
       break;
     };
     case GET_PRICE_SYMBOL: {
-      result.isSuccess = true;
       result.type = GET_PRICE;
       break;
+    };
+    default: {
+      result.isSuccess = false;
     };
   }
 
@@ -148,7 +117,7 @@ ParseInstrTypeResult parseInstrType(char symbol) {
 }
 
 ReadInstrResult readSetPriceInstr() {
-  ReadInstrResult result = {false, false};
+  ReadInstrResult result = {.isSuccess = false};
   SetPriceInstr instr;
 
   int elementsRead = scanf(" %d", &instr.price);
@@ -167,7 +136,7 @@ ReadInstrResult readSetPriceInstr() {
 }
 
 ReadInstrResult readGetPriceInstr() {
-  ReadInstrResult result = {false, false};
+  ReadInstrResult result = {.isSuccess = false};
   GetPriceInstr instr;
 
   int elementsRead = scanf(" %d %d", &instr.from, &instr.to);
@@ -188,22 +157,22 @@ ReadInstrResult readGetPriceInstr() {
 }
 
 ReadInstrResult readInstr() {
-  ReadInstrResult result = {false, false};
+  ReadInstrResult result = {.isSuccess = false};
 
   char instrTypeChar;
   int elementsRead = scanf(" %c", &instrTypeChar);
 
-  if (elementsRead == -1) {
+  if (elementsRead == EOF) {
     result.isEof = true;
     return result;
   }
 
-  ParseInstrTypeResult parseInstrTypeResult = parseInstrType(instrTypeChar);
-  if (elementsRead != 1 || !parseInstrTypeResult.isSuccess) {
+  ParseInstrTypeResult parseResult = parseInstrType(instrTypeChar);
+  if (elementsRead != 1 || !parseResult.isSuccess) {
     return result;
   }
 
-  switch (parseInstrTypeResult.type) {
+  switch (parseResult.type) {
     case SET_PRICE:
       return readSetPriceInstr();
     default:
@@ -211,60 +180,60 @@ ReadInstrResult readInstr() {
   }
 }
 
-void printProfit(const char* label, ProfitRecord* profit) {
+void printPriceChange(const char* label, PriceChange* change) {
   printf("%s: ", label);
-  if (profit->value == 0) {
-    printf("N/A");
+  if (change->value > 0) {
+    printf("%d (%d - %d)", change->value, change->from, change->to);
   } else {
-    printf("%d (%d - %d)", abs(profit->value), profit->from, profit->to);
+    printf("N/A");
   }
   printf("\n");
 }
 
 HandleInstrResult handleGetPriceInstr(Context* context, Instr* instr) {
-  HandleInstrResult result = {false};
-  GetPriceInstr getPriceInstr = instr->value.getPrice;
-  Array priceRecords = *context->priceRecords;
+  HandleInstrResult result = {.isSuccess = false};
 
-  if (getPriceInstr.to >= priceRecords.length) {
+  GetPriceInstr getPriceInstr = instr->value.getPrice;
+  Array* priceRecords = &context->priceRecords;
+
+  if (getPriceInstr.to >= priceRecords->length) {
     return result;
   }
 
-  ProfitRecord maxProfit = {0, 0, 0};
-  ProfitRecord maxLoss = {0, 0, 0};
+  PriceChange maxProfit = initPriceChange();
+  PriceChange maxLoss = initPriceChange();
 
   for (int i = getPriceInstr.from; i <= getPriceInstr.to; i += 1) {
-    int leftMin = context->minMaxArrays->minLeft.array[i];
-    int rightMax = context->minMaxArrays->maxRight.array[i];
-    int leftMax = context->minMaxArrays->maxLeft.array[i];
-    int rightMin = context->minMaxArrays->minRight.array[i];
+    int currentPrice = priceRecords->items[i];
 
-    int profit = rightMax - leftMin;
-    int loss = rightMin - leftMax;
+    for (int j = getPriceInstr.from; j < i; j += 1) {
+      int prevPrice = priceRecords->items[j];
+      int profit = currentPrice - prevPrice;
+      int loss = prevPrice - currentPrice;
 
-    if (profit > maxProfit.value) {
-      maxProfit.from = leftMin;
-      maxProfit.to = rightMax;
-      maxProfit.value = profit;
-    }
-    if (loss < maxLoss.value) {
-      maxLoss.from = leftMax;
-      maxLoss.to = rightMin;
-      maxLoss.value = loss;
+      if (profit > maxProfit.value) {
+        maxProfit.from = j;
+        maxProfit.to = i;
+        maxProfit.value = profit;
+      } else if (loss > maxLoss.value) {
+        maxLoss.from = j;
+        maxLoss.to = i;
+        maxLoss.value = loss;
+      }
     }
   }
 
-  printProfit("Nejvyssi zisk", &maxProfit);
-  printProfit("Nejvyssi ztrata", &maxLoss);
+  printPriceChange("Nejvyssi zisk", &maxProfit);
+  printPriceChange("Nejvyssi ztrata", &maxLoss);
 
   result.isSuccess = true;
   return result;
 }
 
 HandleInstrResult handleSetPriceInstr(Context* context, Instr* instr) {
-  HandleInstrResult result = {false};
+  HandleInstrResult result = {.isSuccess = false};
 
-  pushArray(context->priceRecords, instr->value.setPrice.price);
+  pushArray(&context->priceRecords, instr->value.setPrice.price);
 
   result.isSuccess = true;
   return result;
@@ -280,10 +249,9 @@ HandleInstrResult handleInstr(Context* context, Instr* instr) {
 }
 
 int main() {
-  Array priceRecords;
-  Context context = {&priceRecords, NULL};
-
-  initArray(context.priceRecords, 100);
+  Context context = {
+      .priceRecords = initArray(100),
+  };
 
   printf("Ceny, hledani:\n");
 
@@ -291,7 +259,7 @@ int main() {
     ReadInstrResult readInstrResult = readInstr();
 
     if (readInstrResult.isEof) {
-      break;
+      goto cleaup;
     }
 
     if (!readInstrResult.isSuccess) {
@@ -299,22 +267,15 @@ int main() {
       goto cleaup;
     }
 
-    MinMaxArrays minMaxArrays = computeMinMaxArrays(context.priceRecords);
-    context.minMaxArrays = &minMaxArrays;
-
-    HandleInstrResult handleInstrResult =
+    HandleInstrResult instrResult =
         handleInstr(&context, &readInstrResult.instr);
 
-    if (!handleInstrResult.isSuccess) {
+    if (!instrResult.isSuccess) {
       printf("Nespravny vstup.\n");
       goto cleaup;
     }
   }
 
 cleaup:
-  freeArray(context.priceRecords);
-  freeArray(&context.minMaxArrays->minLeft);
-  freeArray(&context.minMaxArrays->maxRight);
-  freeArray(&context.minMaxArrays->minRight);
-  freeArray(&context.minMaxArrays->maxLeft);
+  freeArray(&context.priceRecords);
 }
