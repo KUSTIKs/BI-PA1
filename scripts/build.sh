@@ -35,7 +35,8 @@ if [ ! -f "$source_file" ]; then
 fi
 
 # Compile the C program
-g++ -Wall -pedantic -o "$output_file" "$source_file" -lm
+# g++ -Wall -pedantic -o "$output_file" "$source_file" -lm
+g++ -std=c++20 -Wall -pedantic -Wno-long-long -O2 -o "$output_file" "$source_file"
 
 # Check if the compilation was successful
 if [ $? -eq 0 ]; then
